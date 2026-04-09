@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>南华彝绣数字赋能平台 - 智能推荐</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600&display=swap" rel="stylesheet">
+    <!-- 引入 FontAwesome 图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        yi: {
+                            red: '#B22222',      // 彝绣红：主色调
+                            blue: '#1E3A8A',     // 科技蓝：辅助色
+                            bg: '#F5F5DC',       // 米白：背景色
+                            dark: '#333333',     // 深灰：主要文字
+                            gray: '#666666',     // 中灰：辅助文字
+                            light: '#EEEEEE',    // 浅灰：分割线
+                        }
+                    },
+                    fontFamily: {
+                        serif: ['"Noto Serif SC"', 'serif'],
+                        sans: ['PingFang SC', 'Helvetica Neue', 'Helvetica', 'Arial', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #F5F5DC;
+            color: #333333;
+        }
+        /* 针对左侧边栏、主区域的特定背景覆盖 */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+        }
+        .chat-container {
+            scroll-behavior: smooth;
+        }
+        .chat-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .chat-container::-webkit-scrollbar-thumb {
+            background-color: #cccccc;
+            border-radius: 3px;
+        }
+        /* 隐藏元素的过渡效果 */
+        .fade-out {
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Markdown 内容样式补充 */
+        .message-content strong {
+            font-weight: 600;
+            color: #B22222; /* 重点加粗部分使用彝绣红 */
+        }
+        .message-content p {
+            margin-bottom: 0.75em;
+        }
+        .message-content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Loading 动画 */
+        .typing-indicator span {
+            display: inline-block;
+            width: 5px;
+            height: 5px;
+            background-color: #B22222;
+            border-radius: 50%;
+            margin: 0 2px;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="h-screen flex font-sans overflow-hidden">
+
+    <!-- 左侧边栏 (结合PRD: 电商导航与个人中心) -->
+    <aside class="w-64 bg-white border-r border-yi-light hidden md:flex flex-col flex-shrink-0 shadow-sm z-10">
+        <div class="p-5 border-b border-yi-light flex items-center gap-3">
+            <div class="w-8 h-8 bg-yi-red rounded-lg flex items-center justify-center text-white">
+                <i class="fa-solid fa-fan text-sm"></i>
+            </div>
+            <h1 class="text-lg font-serif font-semibold text-yi-dark tracking-wide">南华彝绣</h1>
+        </div>
+        
+        <div class="flex-1 overflow-y-auto p-3 space-y-6">
+            <!-- 核心功能 -->
+            <div>
+                <div class="text-xs text-yi-gray font-semibold px-3 py-2 mb-1 uppercase tracking-wider">核心服务</div>
+                <button onclick="switchView('chat')" class="w-full flex items-center gap-3 bg-yi-red text-white hover:bg-red-800 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shadow-sm mb-1">
+                    <i class="fa-solid fa-sparkles w-4 text-center"></i>
+                    智能推荐助手
+                </button>
+                <button onclick="switchView('discover')" class="w-full flex items-center gap-3 text-yi-gray hover:text-yi-dark hover:bg-gray-50 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+                    <i class="fa-solid fa-compass w-4 text-center"></i>
+                    发现好物
+                </button>
+            </div>
+
+            <!-- 电商模块 (模拟) -->
+            <div>
+                <div class="text-xs text-yi-gray font-semibold px-3 py-2 mb-1 uppercase tracking-wider">商城与订单</div>
+                <button onclick="switchView('cart')" class="w-full flex items-center justify-between text-yi-gray hover:text-yi-dark hover:bg-gray-50 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+                    <div class="flex items-center gap-3">
+                        <i class="fa-solid fa-cart-shopping w-4 text-center"></i>
+                        购物车
+                    </div>
+                    <span id="cart-badge" class="bg-yi-red text-white text-[10px] px-1.5 py-0.5 rounded-full">0</span>
+                </button>
+                <button onclick="switchView('orders')" class="w-full flex items-center gap-3 text-yi-gray hover:text-yi-dark hover:bg-gray-50 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+                    <i class="fa-solid fa-file-invoice w-4 text-center"></i>
+                    我的订单
+                </button>
+                <button onclick="switchView('favorites')" class="w-full flex items-center gap-3 text-yi-gray hover:text-yi-dark hover:bg-gray-50 text-sm font-medium px-4 py-2.5 rounded-xl transition-colors">
+                    <i class="fa-solid fa-heart w-4 text-center"></i>
+                    收藏夹
+                </button>
+            </div>
+        </div>
+        
+        <!-- 底部个人中心 -->
+        <button onclick="switchView('profile')" class="w-full p-4 border-t border-yi-light text-sm text-yi-dark flex items-center justify-between hover:bg-gray-50 cursor-pointer transition-colors">
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-yi-blue flex items-center justify-center text-white shadow-inner">
+                    <i class="fa-solid fa-user text-xs"></i>
+                </div>
+                <span class="font-medium">个人中心</span>
+            </div>
+            <i class="fa-solid fa-gear text-yi-gray hover:text-yi-dark"></i>
+        </div>
+    </aside>
+
+    <!-- 主区域，将包含多个视图 -->
+    <main class="flex-1 flex flex-col relative h-full min-w-0 bg-white overflow-hidden">
+        <!-- 移动端顶部导航 (桌面端隐藏) -->
+        <header class="md:hidden flex items-center justify-between p-3 border-b border-yi-light bg-white shadow-sm z-10 flex-shrink-0">
+            <button class="w-10 h-10 flex items-center justify-center text-yi-gray rounded-lg hover:bg-gray-100">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            <h1 id="mobile-title" class="text-base font-serif font-medium flex items-center gap-2 text-yi-dark">
+                <i class="fa-solid fa-fan text-yi-red text-sm"></i> 智能推荐助手
+            </h1>
+            <button onclick="location.reload()" class="w-10 h-10 flex items-center justify-center text-yi-gray rounded-lg hover:bg-gray-100">
+                <i class="fa-solid fa-rotate-right"></i>
+            </button>
+        </header>
+
+        <!-- 视图 1: 智能推荐助手 (Chat) -->
+        <div id="view-chat" class="app-view flex-1 flex flex-col h-full absolute inset-0 md:static">
+            <!-- 聊天记录区 -->
+            <div id="chat-box" class="flex-1 overflow-y-auto chat-container relative bg-yi-bg bg-opacity-30">
+                
+                <!-- 欢迎页 -->
+                <div id="welcome-screen" class="absolute inset-0 flex flex-col items-center justify-center p-4 transition-opacity duration-300">
+                    <div class="w-20 h-20 bg-white border-2 border-yi-red rounded-full flex items-center justify-center shadow-md mb-6 transform hover:scale-105 transition-transform">
+                        <i class="fa-solid fa-fan text-yi-red text-4xl"></i>
+                    </div>
+                    <h2 class="text-2xl md:text-3xl font-serif font-semibold mb-2 text-center text-yi-dark">懂彝绣的文化科技伙伴</h2>
+                    <p class="text-sm text-yi-gray mb-8 text-center max-w-md">为您提供“可解释的智能推荐”，让每一次购买都成为一次深度的非遗文化体验。</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-2xl">
+                        <button onclick="useExample('想送给长辈一件寓意健康长寿的礼物')" class="text-left p-4 rounded-xl bg-white border border-yi-light hover:border-yi-red hover:shadow-md transition-all group">
+                            <div class="text-sm font-semibold text-yi-dark mb-1 flex items-center gap-2">
+                                <div class="w-6 h-6 rounded bg-red-50 text-yi-red flex items-center justify-center"><i class="fa-solid fa-hand-holding-heart"></i></div>
+                                孝敬长辈
+                            </div>
+                            <div class="text-xs text-yi-gray group-hover:text-yi-dark transition-colors pl-8">推荐寓意健康长寿、平安吉祥的传统纹样</div>
+                        </button>
+                        <button onclick="useExample('朋友结婚，想挑一件有文化底蕴的贺礼')" class="text-left p-4 rounded-xl bg-white border border-yi-light hover:border-yi-red hover:shadow-md transition-all group">
+                            <div class="text-sm font-semibold text-yi-dark mb-1 flex items-center gap-2">
+                                <div class="w-6 h-6 rounded bg-pink-50 text-pink-600 flex items-center justify-center"><i class="fa-solid fa-ring"></i></div>
+                                婚庆道贺
+                            </div>
+                            <div class="text-xs text-yi-gray group-hover:text-yi-dark transition-colors pl-8">寻找象征百年好合、爱情忠贞的精美绣品</div>
+                        </button>
+                        <button onclick="useExample('想给新居添置一些带有辟邪纳福寓意的家居饰品')" class="text-left p-4 rounded-xl bg-white border border-yi-light hover:border-yi-red hover:shadow-md transition-all group">
+                            <div class="text-sm font-semibold text-yi-dark mb-1 flex items-center gap-2">
+                                <div class="w-6 h-6 rounded bg-orange-50 text-orange-600 flex items-center justify-center"><i class="fa-solid fa-house-chimney"></i></div>
+                                乔迁新居
+                            </div>
+                            <div class="text-xs text-yi-gray group-hover:text-yi-dark transition-colors pl-8">推荐镇宅辟邪、招财进宝的特色家居摆件</div>
+                        </button>
+                        <button onclick="useExample('需要送给外国客户一份代表中国非遗文化的伴手礼')" class="text-left p-4 rounded-xl bg-white border border-yi-light hover:border-yi-red hover:shadow-md transition-all group">
+                            <div class="text-sm font-semibold text-yi-dark mb-1 flex items-center gap-2">
+                                <div class="w-6 h-6 rounded bg-blue-50 text-blue-600 flex items-center justify-center"><i class="fa-solid fa-earth-americas"></i></div>
+                                商务外事
+                            </div>
+                            <div class="text-xs text-yi-gray group-hover:text-yi-dark transition-colors pl-8">挑选极具东方美学与大师工艺的高端礼品</div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 对话列表容器 (初始隐藏) -->
+                <div id="messages-container" class="max-w-3xl mx-auto py-8 px-4 sm:px-6 flex flex-col gap-8 hidden pb-12">
+                    <!-- 动态消息将插入到这里 -->
+                </div>
+            </div>
+
+            <!-- 底部输入区 -->
+            <div class="w-full glass-panel border-t border-yi-light pt-3 pb-5 px-4 sm:px-6 z-10 relative flex-shrink-0">
+                <div class="max-w-3xl mx-auto relative">
+                    <form id="recommend-form" class="relative flex items-end bg-white border-2 border-yi-light rounded-2xl focus-within:border-yi-blue transition-all shadow-sm overflow-hidden">
+                        <button type="button" class="absolute left-3 bottom-3 text-yi-gray hover:text-yi-blue transition-colors p-1" title="上传图片或语音">
+                            <i class="fa-solid fa-circle-plus text-lg"></i>
+                        </button>
+                        <textarea 
+                            id="user-input" 
+                            rows="1"
+                            class="w-full max-h-48 bg-transparent text-yi-dark text-[15px] p-3.5 pl-12 pr-14 resize-none focus:outline-none" 
+                            placeholder="输入您的需求（如：送给长辈，希望带来健康长寿的纹样）..." 
+                            required
+                        ></textarea>
+                        <button 
+                            type="submit" 
+                            id="submit-btn"
+                            class="absolute right-2 bottom-2 text-white bg-yi-red hover:bg-red-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors rounded-xl w-9 h-9 flex items-center justify-center shadow-sm"
+                            disabled
+                        >
+                            <i class="fa-solid fa-arrow-up text-sm"></i>
+                        </button>
+                    </form>
+                    <div class="text-center mt-3 text-xs text-yi-gray flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-yi-blue opacity-70"></i>
+                        平台基于 Qwen 模型与南华彝绣知识图谱为您提供可解释的推荐
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 2: 发现好物 (Discover) -->
+        <div id="view-discover" class="app-view hidden flex-1 overflow-y-auto p-6 bg-gray-50 absolute inset-0 md:static">
+            <h2 class="text-2xl font-serif font-bold text-yi-dark mb-6">发现好物</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="discover-list">
+                <!-- 模拟商品卡片 -->
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-yi-light cursor-pointer">
+                    <div class="h-48 bg-gray-200 flex items-center justify-center relative">
+                        <i class="fa-regular fa-image text-4xl text-gray-400"></i>
+                        <span class="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 text-xs rounded-lg text-yi-red font-medium">马樱花</span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-sm font-medium text-yi-dark line-clamp-2 mb-2">彝族手工刺绣马樱花帆布包双面绣</h3>
+                        <div class="flex items-center justify-between">
+                            <span class="text-yi-red font-bold">¥158.00</span>
+                            <button onclick="addToCart(103, '彝族手工刺绣马樱花帆布包双面绣', 158.0); event.stopPropagation();" class="w-8 h-8 rounded-full bg-red-50 text-yi-red flex items-center justify-center hover:bg-yi-red hover:text-white transition-colors">
+                                <i class="fa-solid fa-plus text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-yi-light cursor-pointer">
+                    <div class="h-48 bg-gray-200 flex items-center justify-center relative">
+                        <i class="fa-regular fa-image text-4xl text-gray-400"></i>
+                        <span class="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 text-xs rounded-lg text-orange-600 font-medium">虎纹</span>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="text-sm font-medium text-yi-dark line-clamp-2 mb-2">镇宅辟邪手工绣制虎头帽摆件</h3>
+                        <div class="flex items-center justify-between">
+                            <span class="text-yi-red font-bold">¥288.00</span>
+                            <button onclick="addToCart(104, '镇宅辟邪手工绣制虎头帽摆件', 288.0); event.stopPropagation();" class="w-8 h-8 rounded-full bg-red-50 text-yi-red flex items-center justify-center hover:bg-yi-red hover:text-white transition-colors">
+                                <i class="fa-solid fa-plus text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 3: 购物车 (Cart) -->
+        <div id="view-cart" class="app-view hidden flex-1 flex flex-col absolute inset-0 md:static bg-gray-50">
+            <div class="flex-1 overflow-y-auto p-6">
+                <h2 class="text-2xl font-serif font-bold text-yi-dark mb-6">购物车</h2>
+                <div id="cart-list" class="space-y-4">
+                    <!-- 购物车项由 JS 渲染 -->
+                    <div class="text-center py-10 text-yi-gray">加载中...</div>
+                </div>
+            </div>
+            <!-- 结算底部栏 -->
+            <div class="bg-white border-t border-yi-light p-4 flex items-center justify-between shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" checked class="w-5 h-5 text-yi-red rounded focus:ring-yi-red border-gray-300">
+                    <span class="text-sm text-yi-dark">全选</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <div class="text-xs text-yi-gray">合计:</div>
+                        <div class="text-lg font-bold text-yi-red" id="cart-total">¥0.00</div>
+                    </div>
+                    <button class="bg-yi-red hover:bg-red-800 text-white px-8 py-3 rounded-xl font-medium transition-colors shadow-sm">
+                        去结算 (<span id="cart-count-btn">0</span>)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 4: 我的订单 (Orders) -->
+        <div id="view-orders" class="app-view hidden flex-1 overflow-y-auto p-6 bg-gray-50 absolute inset-0 md:static">
+            <h2 class="text-2xl font-serif font-bold text-yi-dark mb-6">我的订单</h2>
+            
+            <!-- 订单状态 Tab -->
+            <div class="flex border-b border-yi-light mb-6 overflow-x-auto">
+                <button class="px-4 py-3 text-yi-red border-b-2 border-yi-red font-medium whitespace-nowrap">全部</button>
+                <button class="px-4 py-3 text-yi-gray hover:text-yi-dark whitespace-nowrap">待付款</button>
+                <button class="px-4 py-3 text-yi-gray hover:text-yi-dark whitespace-nowrap">待发货</button>
+                <button class="px-4 py-3 text-yi-gray hover:text-yi-dark whitespace-nowrap">待收货</button>
+                <button class="px-4 py-3 text-yi-gray hover:text-yi-dark whitespace-nowrap">待评价</button>
+            </div>
+
+            <div id="orders-list" class="space-y-4">
+                <!-- 订单项由 JS 渲染 -->
+                <div class="text-center py-10 text-yi-gray">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 视图 5: 收藏夹 (Favorites) -->
+        <div id="view-favorites" class="app-view hidden flex-1 overflow-y-auto p-6 bg-gray-50 absolute inset-0 md:static">
+            <h2 class="text-2xl font-serif font-bold text-yi-dark mb-6">我的收藏</h2>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6" id="favorites-list">
+                <!-- 收藏项由 JS 渲染 -->
+                <div class="col-span-full text-center py-10 text-yi-gray">加载中...</div>
+            </div>
+        </div>
+
+        <!-- 视图 6: 个人中心 (Profile) -->
+        <div id="view-profile" class="app-view hidden flex-1 overflow-y-auto p-6 bg-gray-50 absolute inset-0 md:static">
+            <div class="max-w-2xl mx-auto">
+                <!-- 用户卡片 -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm border border-yi-light flex items-center gap-6 mb-6">
+                    <div class="w-20 h-20 bg-yi-blue rounded-full flex items-center justify-center text-white text-3xl shadow-inner">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-yi-dark mb-1">文化探索者_082</h2>
+                        <p class="text-sm text-yi-gray">已在南华彝绣平台探索 12 天</p>
+                    </div>
+                </div>
+
+                <!-- 快捷入口 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-yi-light overflow-hidden mb-6">
+                    <a href="#" onclick="switchView('orders')" class="flex items-center justify-between p-4 border-b border-yi-light hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-3 text-yi-dark"><i class="fa-solid fa-file-invoice text-yi-gray w-5 text-center"></i> 全部订单</div>
+                        <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+                    </a>
+                    <a href="#" onclick="switchView('favorites')" class="flex items-center justify-between p-4 border-b border-yi-light hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-3 text-yi-dark"><i class="fa-solid fa-heart text-yi-gray w-5 text-center"></i> 我的收藏</div>
+                        <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+                    </a>
+                    <a href="#" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-3 text-yi-dark"><i class="fa-solid fa-location-dot text-yi-gray w-5 text-center"></i> 地址管理</div>
+                        <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+                    </a>
+                </div>
+
+                <!-- 设置 -->
+                <div class="bg-white rounded-2xl shadow-sm border border-yi-light overflow-hidden">
+                    <a href="#" class="flex items-center justify-between p-4 border-b border-yi-light hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-3 text-yi-dark"><i class="fa-solid fa-circle-question text-yi-gray w-5 text-center"></i> 帮助与客服</div>
+                        <i class="fa-solid fa-chevron-right text-gray-400 text-xs"></i>
+                    </a>
+                    <a href="#" onclick="switchView('login')" class="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors">
+                        <div class="flex items-center gap-3 text-red-500"><i class="fa-solid fa-arrow-right-from-bracket w-5 text-center"></i> 退出登录</div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- 视图 7: 商品详情 (Product Detail) -->
+        <div id="view-product-detail" class="app-view hidden flex-1 flex-col absolute inset-0 md:static bg-white z-20 overflow-y-auto">
+            <!-- 详情页专属顶部导航 -->
+            <div class="flex items-center justify-between p-4 border-b border-yi-light bg-white sticky top-0 z-30">
+                <button onclick="switchView('discover')" class="w-10 h-10 flex items-center justify-center text-yi-gray rounded-lg hover:bg-gray-100">
+                    <i class="fa-solid fa-arrow-left text-lg"></i>
+                </button>
+                <h1 class="text-base font-serif font-medium text-yi-dark">纹样详情</h1>
+                <button class="w-10 h-10 flex items-center justify-center text-yi-gray rounded-lg hover:bg-gray-100">
+                    <i class="fa-solid fa-share-nodes text-lg"></i>
+                </button>
+            </div>
+            
+            <div class="flex-1 flex flex-col md:flex-row relative">
+                <!-- 大图展示区 (左侧固定) -->
+                <div class="w-full md:w-1/2 md:sticky md:top-0 h-[40vh] md:h-full bg-gray-100 flex items-center justify-center overflow-hidden border-b md:border-b-0 md:border-r border-yi-light" id="detail-image-container">
+                    <i class="fa-regular fa-image text-6xl text-gray-300"></i>
+                </div>
+
+                <!-- 核心信息与文化卡片区 (右侧滚动) -->
+                <div class="w-full md:w-1/2 flex flex-col min-h-full pb-20 md:pb-24 bg-white relative z-10">
+                    <div class="p-6 md:p-8 lg:p-10 border-b border-yi-light bg-white">
+                        <div class="flex flex-col gap-3 mb-4">
+                            <div class="inline-block bg-red-50 text-yi-red px-3 py-1 rounded-full text-xs font-medium w-max border border-red-100" id="detail-pattern">纹样标签</div>
+                            <h2 class="text-2xl md:text-3xl font-serif font-bold text-yi-dark leading-tight" id="detail-name">加载中...</h2>
+                        </div>
+                        <div class="text-3xl font-bold text-yi-red flex items-baseline gap-1" id="detail-price"><span class="text-xl">¥</span>0.00</div>
+                    </div>
+
+                    <div class="p-6 md:p-8 lg:p-10 bg-gradient-to-br from-gray-50 to-white flex-1 relative">
+                        <!-- 装饰性背景元素 -->
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-yi-red/5 rounded-full blur-3xl"></div>
+                        <div class="absolute bottom-10 left-10 w-40 h-40 bg-yi-blue/5 rounded-full blur-3xl"></div>
+                        
+                        <h3 class="text-xl font-serif font-bold text-yi-dark mb-6 flex items-center gap-3 relative z-10">
+                            <span class="w-8 h-8 rounded-full bg-gradient-to-tr from-yi-red to-red-400 flex items-center justify-center text-white shadow-md transform hover:rotate-12 transition-transform"><i class="fa-solid fa-book-open text-sm"></i></span>
+                            非遗文化解读
+                        </h3>
+                        
+                        <div class="space-y-6 relative z-10">
+                            <div class="bg-white/80 backdrop-blur-md p-6 rounded-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden group hover:-translate-y-1">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-yi-red to-red-300 opacity-80"></div>
+                                <h4 class="text-sm font-bold text-yi-gray mb-3 flex items-center gap-2">
+                                    <i class="fa-solid fa-seedling text-yi-red/80 group-hover:scale-110 transition-transform"></i> 文化寓意
+                                </h4>
+                                <p class="text-[15px] md:text-base text-yi-dark leading-relaxed text-justify" id="detail-meaning">加载中...</p>
+                            </div>
+                            
+                            <div class="bg-white/80 backdrop-blur-md p-6 rounded-2xl border border-white/60 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-all duration-300 relative overflow-hidden group hover:-translate-y-1">
+                                <div class="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-yi-blue to-blue-300 opacity-80"></div>
+                                <h4 class="text-sm font-bold text-yi-gray mb-3 flex items-center gap-2">
+                                    <i class="fa-solid fa-location-dot text-yi-blue/80 group-hover:scale-110 transition-transform"></i> 适用场景
+                                </h4>
+                                <p class="text-[15px] md:text-base text-yi-dark leading-relaxed text-justify" id="detail-scenario">加载中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部购买栏 -->
+            <div class="bg-white border-t border-yi-light p-3 sm:p-4 flex items-center justify-between shadow-[0_-10px_20px_rgba(0,0,0,0.05)] fixed md:absolute bottom-0 w-full md:w-1/2 md:right-0 z-40">
+                <div class="flex items-center gap-4 pl-2">
+                    <button class="flex flex-col items-center justify-center w-12 h-10 text-yi-gray hover:text-yi-dark transition-colors group" onclick="switchView('chat')">
+                        <i class="fa-solid fa-headset text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-medium">客服</span>
+                    </button>
+                    <button id="detail-fav-btn" class="flex flex-col items-center justify-center w-12 h-10 text-yi-gray hover:text-yi-red transition-colors group">
+                        <i class="fa-regular fa-heart text-xl mb-1 group-hover:scale-110 transition-transform"></i>
+                        <span class="text-[10px] font-medium">收藏</span>
+                    </button>
+                </div>
+                <div class="flex gap-3 flex-1 ml-6 justify-end pr-2">
+                    <button id="detail-cart-btn" class="flex-1 md:flex-none px-4 sm:px-6 py-3 rounded-xl border-2 border-yi-red text-yi-red text-sm font-bold hover:bg-red-50 transition-colors whitespace-nowrap active:scale-95">
+                        加入购物车
+                    </button>
+                    <button class="flex-1 md:flex-none px-4 sm:px-8 py-3 rounded-xl bg-yi-red text-white text-sm font-bold hover:bg-red-800 transition-colors shadow-[0_4px_12px_rgba(178,34,34,0.3)] whitespace-nowrap active:scale-95">
+                        立即定制
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- 视图 8: 登录/注册 (Login/Register) -->
+        <div id="view-login" class="app-view hidden fixed inset-0 z-[100] flex-col md:flex-row overflow-hidden bg-cover bg-center bg-no-repeat" style="background-image: url('https://images.unsplash.com/photo-1615147342761-9238e15d8b96?ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&ixlib=rb-4.0.3&auto=format&fit=crop&w=2000&q=80');">
+            <!-- 背景毛玻璃遮罩 -->
+            <div class="absolute inset-0 bg-black/40 backdrop-blur-[8px]"></div>
+
+            <!-- 左侧内容区 (仅在大屏显示) -->
+            <div class="hidden md:flex flex-1 relative z-10 flex-col justify-center px-16 text-white">
+                <div class="mb-8 w-24 h-24 bg-white/20 backdrop-blur-md rounded-3xl flex items-center justify-center shadow-2xl border border-white/30 transform -rotate-6 hover:rotate-0 transition-transform duration-500">
+                    <i class="fa-solid fa-fan text-5xl text-white drop-shadow-md"></i>
+                </div>
+                <h1 class="text-5xl font-serif font-bold mb-6 drop-shadow-lg tracking-wider">南华彝绣</h1>
+                <p class="text-xl text-white/90 leading-relaxed max-w-lg drop-shadow-md font-light">
+                    传承千年指尖艺术，点亮现代数字生活。<br>在这里，每一针每一线，都讲述着古老而动人的故事。
+                </p>
+                <div class="mt-12 flex items-center gap-4 text-white/80">
+                    <div class="flex -space-x-4">
+                        <div class="w-10 h-10 rounded-full border-2 border-white/50 bg-gray-400"></div>
+                        <div class="w-10 h-10 rounded-full border-2 border-white/50 bg-gray-500"></div>
+                        <div class="w-10 h-10 rounded-full border-2 border-white/50 bg-gray-600"></div>
+                    </div>
+                    <span class="text-sm">超过 10,000+ 文化爱好者已加入</span>
+                </div>
+            </div>
+
+            <!-- 右侧登录表单区 -->
+            <div class="w-full md:w-[500px] bg-white/10 backdrop-blur-2xl border-l border-white/20 relative z-10 flex flex-col justify-center px-8 py-12 md:p-12 shadow-[-20px_0_40px_rgba(0,0,0,0.3)] h-full overflow-y-auto">
+                <!-- 关闭按钮 -->
+                <button onclick="switchView('chat')" class="absolute top-6 right-6 w-10 h-10 flex items-center justify-center text-white/70 bg-black/20 hover:bg-black/40 hover:text-white rounded-full transition-all backdrop-blur-sm">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+
+                <!-- 移动端顶部标题 (仅在移动端显示) -->
+                <div class="md:hidden text-center mb-10 text-white">
+                    <div class="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border border-white/30">
+                        <i class="fa-solid fa-fan text-4xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-serif font-bold mb-2">南华彝绣</h2>
+                    <p class="text-sm text-white/80">传承千年指尖艺术</p>
+                </div>
+
+                <div class="w-full max-w-sm mx-auto">
+                    <!-- Tab 切换 -->
+                    <div class="flex mb-8 border-b border-white/20">
+                        <button class="flex-1 pb-3 text-lg font-medium text-white border-b-2 border-white transition-all shadow-[0_2px_0_white]" id="tab-login" onclick="switchLoginTab('login')">登录</button>
+                        <button class="flex-1 pb-3 text-lg font-medium text-white/50 hover:text-white transition-all" id="tab-register" onclick="switchLoginTab('register')">注册</button>
+                    </div>
+
+                    <form id="login-form" onsubmit="handleLogin(event)">
+                        <div class="space-y-6">
+                            <!-- 账号输入 -->
+                            <div class="group">
+                                <label class="block text-sm font-medium text-white/90 mb-2 group-focus-within:text-white transition-colors">手机号 / 邮箱</label>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <i class="fa-regular fa-user text-white/50 group-focus-within:text-white transition-colors"></i>
+                                    </div>
+                                    <input type="text" id="login-username" class="w-full pl-12 pr-4 py-3.5 bg-black/20 border border-white/20 rounded-xl text-white placeholder-white/40 focus:bg-black/40 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all outline-none backdrop-blur-sm" placeholder="请输入您的账号" required>
+                                </div>
+                            </div>
+
+                            <!-- 密码输入 -->
+                            <div class="group">
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-sm font-medium text-white/90 group-focus-within:text-white transition-colors">密码</label>
+                                    <a href="#" class="text-xs text-white/60 hover:text-white transition-colors">忘记密码？</a>
+                                </div>
+                                <div class="relative">
+                                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                        <i class="fa-solid fa-lock text-white/50 group-focus-within:text-white transition-colors"></i>
+                                    </div>
+                                    <input type="password" id="login-password" class="w-full pl-12 pr-12 py-3.5 bg-black/20 border border-white/20 rounded-xl text-white placeholder-white/40 focus:bg-black/40 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all outline-none backdrop-blur-sm" placeholder="请输入密码" required>
+                                    <button type="button" onclick="togglePasswordVisibility('login-password')" class="absolute inset-y-0 right-0 pr-4 flex items-center text-white/50 hover:text-white transition-colors">
+                                        <i class="fa-regular fa-eye-slash" id="login-password-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- 验证码 (仅注册显示) -->
+                            <div id="register-fields" class="hidden space-y-6">
+                                <div class="group">
+                                    <label class="block text-sm font-medium text-white/90 mb-2 group-focus-within:text-white transition-colors">验证码</label>
+                                    <div class="flex gap-3">
+                                        <div class="relative flex-1">
+                                            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                                                <i class="fa-solid fa-shield-halved text-white/50 group-focus-within:text-white transition-colors"></i>
+                                            </div>
+                                            <input type="text" class="w-full pl-12 pr-4 py-3.5 bg-black/20 border border-white/20 rounded-xl text-white placeholder-white/40 focus:bg-black/40 focus:border-white/50 focus:ring-2 focus:ring-white/20 transition-all outline-none backdrop-blur-sm" placeholder="请输入验证码">
+                                        </div>
+                                        <button type="button" class="px-5 py-3.5 bg-white/20 text-white border border-white/30 rounded-xl text-sm font-medium hover:bg-white hover:text-black transition-colors whitespace-nowrap backdrop-blur-sm">获取验证码</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 用户协议 -->
+                        <div class="mt-6 flex items-start gap-2">
+                            <input type="checkbox" id="login-agreement" class="mt-1.5 w-4 h-4 rounded bg-black/20 border-white/30 text-yi-red focus:ring-offset-0 focus:ring-white/30" required>
+                            <label for="login-agreement" class="text-xs text-white/70 leading-tight">
+                                我已阅读并同意 <a href="#" class="text-white hover:underline font-medium">《南华彝绣平台服务协议》</a> 和 <a href="#" class="text-white hover:underline font-medium">《隐私政策》</a>
+                            </label>
+                        </div>
+
+                        <!-- 提交按钮 -->
+                        <button type="submit" id="login-submit-btn" class="w-full mt-8 bg-gradient-to-r from-red-600 to-red-800 hover:from-red-500 hover:to-red-700 text-white py-4 rounded-xl font-bold transition-all shadow-[0_8px_20px_rgba(180,30,30,0.4)] hover:shadow-[0_12px_25px_rgba(180,30,30,0.6)] transform hover:-translate-y-1 text-lg tracking-wide border border-red-500/50">
+                            登 录
+                        </button>
+                    </form>
+
+                    <!-- 第三方登录 -->
+                    <div class="mt-10">
+                        <div class="relative">
+                            <div class="absolute inset-0 flex items-center">
+                                <div class="w-full border-t border-white/20"></div>
+                            </div>
+                            <div class="relative flex justify-center text-sm">
+                                <span class="px-4 bg-transparent text-white/50 text-xs backdrop-blur-sm">其他方式登录</span>
+                            </div>
+                        </div>
+                        <div class="mt-6 flex justify-center gap-6">
+                            <button class="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-green-500 hover:border-green-500 transition-all text-xl backdrop-blur-sm shadow-lg hover:shadow-green-500/50 transform hover:-translate-y-1">
+                                <i class="fa-brands fa-weixin"></i>
+                            </button>
+                            <button class="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-blue-500 hover:border-blue-500 transition-all text-xl backdrop-blur-sm shadow-lg hover:shadow-blue-500/50 transform hover:-translate-y-1">
+                                <i class="fa-brands fa-qq"></i>
+                            </button>
+                            <button class="w-12 h-12 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-white hover:bg-red-500 hover:border-red-500 transition-all text-xl backdrop-blur-sm shadow-lg hover:shadow-red-500/50 transform hover:-translate-y-1">
+                                <i class="fa-brands fa-weibo"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const messagesContainer = document.getElementById('messages-container');
+        const welcomeScreen = document.getElementById('welcome-screen');
+        const form = document.getElementById('recommend-form');
+        const userInput = document.getElementById('user-input');
+        const submitBtn = document.getElementById('submit-btn');
+        let isFirstMessage = true;
+
+        // 监听输入框内容，控制发送按钮的启用状态
+        userInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight < 200 ? this.scrollHeight : 200) + 'px';
+            
+            if (this.value.trim().length > 0) {
+                submitBtn.removeAttribute('disabled');
+                submitBtn.classList.remove('bg-gray-300');
+                submitBtn.classList.add('bg-yi-red');
+            } else {
+                submitBtn.setAttribute('disabled', 'true');
+                submitBtn.classList.add('bg-gray-300');
+                submitBtn.classList.remove('bg-yi-red');
+            }
+        });
+
+        // 允许 Enter 发送，Shift+Enter 换行
+        userInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                if(userInput.value.trim() !== '') {
+                    form.dispatchEvent(new Event('submit'));
+                }
+            }
+        });
+
+        // 点击示例快速填入
+        function useExample(text) {
+            userInput.value = text;
+            userInput.focus();
+            userInput.dispatchEvent(new Event('input'));
+            form.dispatchEvent(new Event('submit'));
+        }
+
+        function hideWelcomeScreen() {
+            if (isFirstMessage) {
+                welcomeScreen.classList.add('fade-out');
+                setTimeout(() => {
+                    welcomeScreen.style.display = 'none';
+                    messagesContainer.classList.remove('hidden');
+                }, 300);
+                isFirstMessage = false;
+            }
+        }
+
+        // 添加用户消息到界面 (使用科技蓝背景)
+        function addUserMessage(message) {
+            hideWelcomeScreen();
+            
+            const div = document.createElement('div');
+            div.className = 'flex items-start justify-end gap-3 fade-in w-full';
+            div.innerHTML = `
+                <div class="bg-yi-blue text-white px-5 py-3 rounded-3xl rounded-tr-sm max-w-[85%] sm:max-w-[75%] text-[15px] message-content shadow-sm leading-relaxed">
+                    ${escapeHTML(message).replace(/\n/g, '<br>')}
+                </div>
+            `;
+            messagesContainer.appendChild(div);
+            scrollToBottom();
+        }
+
+        // 添加系统回复到界面 (纯白卡片，突出文化属性，带推荐商品)
+        function addBotMessage(message, products = [], isError = false) {
+            const div = document.createElement('div');
+            div.className = 'flex items-start gap-4 fade-in w-full';
+            
+            const contentClass = isError ? 'text-red-500' : 'text-yi-dark';
+            // 简单处理换行和加粗
+            const formattedMessage = message
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            let productsHtml = '';
+            if (products && products.length > 0) {
+                productsHtml = `<div class="mt-4 pt-4 border-t border-yi-light">
+                    <h4 class="text-sm font-semibold text-yi-dark mb-3 flex items-center gap-2"><i class="fa-solid fa-gift text-yi-red"></i> 为您推荐以下好物</h4>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">`;
+                
+                products.forEach(p => {
+                    const price = parseFloat(p.price) || 198.0;
+                     productsHtml += `
+                         <div class="bg-gray-50 rounded-xl p-3 border border-yi-light flex gap-3 group hover:border-yi-red transition-colors cursor-pointer" onclick='showProductDetail(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+                             <div class="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                 ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover" onerror="this.outerHTML='<i class=\\'fa-regular fa-image text-gray-400\\'></i>'"/>` : `<i class="fa-regular fa-image text-gray-400"></i>`}
+                             </div>
+                             <div class="flex-1 min-w-0 flex flex-col justify-between">
+                                 <h5 class="text-xs font-medium text-yi-dark truncate" title="${p.name}">${p.name}</h5>
+                                 <div class="flex items-center justify-between mt-1">
+                                     <span class="text-sm font-bold text-yi-red">¥${price.toFixed(2)}</span>
+                                     <button onclick="addToCart(${p.id}, '${p.name}', ${price}); event.stopPropagation();" class="w-6 h-6 rounded-full bg-red-50 text-yi-red flex items-center justify-center hover:bg-yi-red hover:text-white transition-colors">
+                                         <i class="fa-solid fa-plus text-xs"></i>
+                                     </button>
+                                 </div>
+                             </div>
+                         </div>`;
+                });
+                productsHtml += `</div></div>`;
+            }
+
+            div.innerHTML = `
+                <div class="flex-shrink-0 bg-white border border-yi-light text-yi-red w-9 h-9 rounded-full flex items-center justify-center shadow-sm text-sm mt-1">
+                    <i class="fa-solid fa-fan"></i>
+                </div>
+                <div class="flex-1 min-w-0 pt-1">
+                    <div class="bg-white border border-yi-light rounded-2xl rounded-tl-sm p-5 shadow-sm">
+                        <div class="${contentClass} text-[15px] message-content leading-relaxed font-serif">
+                            ${formattedMessage}
+                        </div>
+                        ${productsHtml}
+                        <!-- 交互图标组 -->
+                        ${!isError ? `
+                        <div class="flex items-center gap-4 mt-4 pt-3 border-t border-yi-light text-yi-gray">
+                            <button onclick="toggleFavorite(${Date.now()}, 'AI推荐结果收藏', 0, this)" class="hover:text-yi-red transition-colors flex items-center gap-1 text-xs"><i class="fa-regular fa-heart"></i> 收藏对话</button>
+                            <span class="flex-1"></span>
+                            <button class="hover:text-yi-dark transition-colors" title="复制"><i class="fa-regular fa-copy text-sm"></i></button>
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(div);
+            scrollToBottom();
+        }
+
+        // 添加正在加载的动画
+        function addLoadingIndicator() {
+            const div = document.createElement('div');
+            div.id = 'loading-indicator';
+            div.className = 'flex items-start gap-4 fade-in w-full';
+            div.innerHTML = `
+                <div class="flex-shrink-0 bg-white border border-yi-light text-yi-red w-9 h-9 rounded-full flex items-center justify-center shadow-sm text-sm mt-1">
+                    <i class="fa-solid fa-fan fa-spin-pulse"></i>
+                </div>
+                <div class="flex-1 min-w-0 pt-3">
+                    <div class="typing-indicator flex items-center h-4">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            `;
+            messagesContainer.appendChild(div);
+            scrollToBottom();
+            return div;
+        }
+
+        function removeLoadingIndicator(indicator) {
+            if (indicator && indicator.parentNode) {
+                indicator.parentNode.removeChild(indicator);
+            }
+        }
+
+        function scrollToBottom() {
+            setTimeout(() => {
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 50);
+        }
+
+        // 添加购物车逻辑
+        async function addToCart(productId, name, price) {
+            try {
+                const response = await fetch('/api/cart/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_id: productId, name, price, quantity: 1 })
+                });
+                const data = await response.json();
+                if (data.code === 0) {
+                    alert('商品已成功加入购物车！');
+                    updateCartCount(); // 更新角标
+                }
+            } catch (error) {
+                console.error('加购失败:', error);
+                alert('网络请求失败，请确保后端服务已启动。');
+            }
+        }
+
+        // 收藏逻辑
+        async function toggleFavorite(productId, name, price, btnElement) {
+            try {
+                const response = await fetch('/api/favorite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ product_id: productId, name, price })
+                });
+                const data = await response.json();
+                if (data.code === 0) {
+                    const icon = btnElement.querySelector('i');
+                    if (data.data.action === 'added') {
+                        icon.classList.remove('fa-regular');
+                        icon.classList.add('fa-solid');
+                        btnElement.classList.add('text-yi-red');
+                    } else {
+                        icon.classList.remove('fa-solid');
+                        icon.classList.add('fa-regular');
+                        btnElement.classList.remove('text-yi-red');
+                    }
+                }
+            } catch (error) {
+                console.error('收藏失败:', error);
+            }
+        }
+
+        // 更新购物车角标
+        async function updateCartCount() {
+            try {
+                const response = await fetch('/api/cart');
+                const data = await response.json();
+                if (data.code === 0) {
+                    const cartBadge = document.getElementById('cart-badge');
+                    if (cartBadge) {
+                        cartBadge.textContent = data.data.length;
+                    }
+                }
+            } catch (error) {
+                console.error('获取购物车失败:', error);
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartCount();
+        });
+
+        // 视图切换逻辑
+        function switchView(viewName) {
+            // 控制侧边栏的显示/隐藏
+            const sidebar = document.querySelector('aside');
+            if (viewName === 'login') {
+                sidebar.classList.remove('md:flex');
+                sidebar.classList.add('hidden');
+            } else {
+                sidebar.classList.add('md:flex');
+            }
+
+            // 隐藏所有视图
+            document.querySelectorAll('.app-view').forEach(el => {
+                el.classList.add('hidden');
+                el.classList.remove('flex');
+            });
+            
+            // 显示目标视图
+            const targetView = document.getElementById(`view-${viewName}`);
+            if (targetView) {
+                targetView.classList.remove('hidden');
+                if (viewName === 'chat' || viewName === 'cart' || viewName === 'login') {
+                    targetView.classList.add('flex');
+                } else {
+                    targetView.classList.add('block');
+                }
+            }
+
+            // 更新左侧边栏激活状态 (桌面端)
+            const sidebarButtons = document.querySelectorAll('aside button');
+            sidebarButtons.forEach(btn => {
+                if(btn.hasAttribute('onclick') && btn.getAttribute('onclick').includes('switchView')) {
+                    if (btn.getAttribute('onclick').includes(viewName)) {
+                        btn.classList.add('bg-yi-red', 'text-white', 'shadow-sm');
+                        btn.classList.remove('text-yi-gray', 'hover:text-yi-dark', 'hover:bg-gray-50');
+                    } else {
+                        btn.classList.remove('bg-yi-red', 'text-white', 'shadow-sm');
+                        btn.classList.add('text-yi-gray', 'hover:text-yi-dark', 'hover:bg-gray-50');
+                    }
+                }
+            });
+
+            // 更新移动端标题
+            const titles = {
+                'chat': '智能推荐助手',
+                'discover': '发现好物',
+                'cart': '购物车',
+                'orders': '我的订单',
+                'favorites': '收藏夹',
+                'profile': '个人中心'
+            };
+            const mobileTitle = document.getElementById('mobile-title');
+            if(mobileTitle && titles[viewName]) {
+                mobileTitle.innerHTML = `<i class="fa-solid fa-fan text-yi-red text-sm"></i> ${titles[viewName]}`;
+            }
+
+            // 加载对应视图的数据
+            if (viewName === 'discover') loadDiscoverData();
+            if (viewName === 'cart') loadCartData();
+            if (viewName === 'orders') loadOrdersData();
+            if (viewName === 'favorites') loadFavoritesData();
+        }
+
+        // 加载发现好物数据
+        async function loadDiscoverData() {
+            try {
+                const response = await fetch('/api/products');
+                const data = await response.json();
+                const container = document.getElementById('discover-list');
+                
+                if (data.code === 0 && data.data.length > 0) {
+                    let html = '';
+                    data.data.forEach(p => {
+                        const price = parseFloat(p.price) || 198.0;
+                        html += `
+                             <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-yi-light cursor-pointer flex flex-col h-full" onclick='showProductDetail(${JSON.stringify(p).replace(/'/g, "&#39;")})'>
+                                 <div class="h-48 bg-gray-100 flex items-center justify-center relative overflow-hidden">
+                                     ${p.image_url ? `<img src="${p.image_url}" class="w-full h-full object-cover" onerror="this.outerHTML='<i class=\\'fa-regular fa-image text-4xl text-gray-300\\'></i>'"/>` : `<i class="fa-regular fa-image text-4xl text-gray-300"></i>`}
+                                     <span class="absolute top-2 right-2 bg-white bg-opacity-90 px-2 py-1 text-xs rounded-lg text-yi-red font-medium shadow-sm">${p.pattern_name}</span>
+                                 </div>
+                                <div class="p-4 flex flex-col flex-1">
+                                    <h3 class="text-sm font-medium text-yi-dark line-clamp-2 mb-1" title="${p.name}">${p.name}</h3>
+                                     <p class="text-xs text-yi-gray line-clamp-1 mb-3 flex-1" title="${p.meaning}">${p.meaning}</p>
+                                     <div class="flex items-center justify-between mt-auto pt-2 border-t border-gray-50">
+                                         <span class="text-yi-red font-bold">¥${price.toFixed(2)}</span>
+                                         <button onclick="addToCart(${p.id}, '${p.name}', ${price}); event.stopPropagation();" class="w-8 h-8 rounded-full bg-red-50 text-yi-red flex items-center justify-center hover:bg-yi-red hover:text-white transition-colors shadow-sm">
+                                             <i class="fa-solid fa-cart-plus text-sm"></i>
+                                         </button>
+                                     </div>
+                                 </div>
+                             </div>
+                         `;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                console.error('加载发现好物失败:', error);
+            }
+        }
+
+        // 加载购物车数据
+        async function loadCartData() {
+            try {
+                const response = await fetch('/api/cart');
+                const data = await response.json();
+                const container = document.getElementById('cart-list');
+                
+                if (data.code === 0 && data.data.length > 0) {
+                    let html = '';
+                    let total = 0;
+                    data.data.forEach(item => {
+                        total += item.price * item.quantity;
+                        html += `
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-yi-light flex gap-4 items-center">
+                                <input type="checkbox" checked class="w-5 h-5 text-yi-red rounded border-gray-300">
+                                <div class="w-20 h-20 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                    <i class="fa-regular fa-image text-gray-400 text-xl"></i>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="text-sm font-medium text-yi-dark truncate">${item.name}</h3>
+                                    <p class="text-xs text-yi-gray mt-1 mb-2">规格: ${item.sku}</p>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-yi-red font-bold">¥${item.price.toFixed(2)}</span>
+                                        <div class="flex items-center border border-yi-light rounded-lg">
+                                            <button class="w-8 h-8 flex items-center justify-center text-yi-gray hover:bg-gray-50">-</button>
+                                            <span class="w-8 text-center text-sm">${item.quantity}</span>
+                                            <button class="w-8 h-8 flex items-center justify-center text-yi-gray hover:bg-gray-50">+</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                    document.getElementById('cart-total').textContent = `¥${total.toFixed(2)}`;
+                    document.getElementById('cart-count-btn').textContent = data.data.length;
+                } else {
+                    container.innerHTML = `<div class="text-center py-20"><div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fa-solid fa-cart-arrow-down text-3xl text-gray-400"></i></div><p class="text-yi-gray">购物车空空如也</p></div>`;
+                    document.getElementById('cart-total').textContent = `¥0.00`;
+                    document.getElementById('cart-count-btn').textContent = '0';
+                }
+            } catch (error) {
+                console.error('加载购物车失败:', error);
+            }
+        }
+
+        // 加载订单数据
+        async function loadOrdersData() {
+            try {
+                const response = await fetch('/api/orders');
+                const data = await response.json();
+                const container = document.getElementById('orders-list');
+                
+                if (data.code === 0 && data.data.length > 0) {
+                    let html = '';
+                    data.data.forEach(order => {
+                        const statusColor = order.status === '已完成' ? 'text-green-600' : 'text-yi-red';
+                        html += `
+                            <div class="bg-white p-4 rounded-xl shadow-sm border border-yi-light">
+                                <div class="flex justify-between items-center mb-4 pb-3 border-b border-yi-light text-sm">
+                                    <span class="text-yi-gray">订单号: ${order.order_no}</span>
+                                    <span class="${statusColor} font-medium">${order.status}</span>
+                                </div>
+                                <div class="flex gap-4 items-center mb-4">
+                                    <div class="w-16 h-16 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <i class="fa-solid fa-box text-gray-400"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h3 class="text-sm font-medium text-yi-dark">包含多件南华彝绣商品</h3>
+                                        <p class="text-xs text-yi-gray mt-1">下单时间: ${order.created_at}</p>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center pt-3">
+                                    <div class="text-sm text-yi-dark">实付款: <span class="text-lg font-bold text-yi-red">¥${order.total_amount.toFixed(2)}</span></div>
+                                    <div class="flex gap-2">
+                                        ${order.status === '待发货' ? `<button class="px-4 py-1.5 rounded-lg border border-yi-light text-sm text-yi-dark hover:bg-gray-50">提醒发货</button>` : ''}
+                                        ${order.status === '已完成' ? `<button class="px-4 py-1.5 rounded-lg border border-yi-red text-sm text-yi-red hover:bg-red-50">再来一单</button>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div class="text-center py-20 text-yi-gray">暂无订单数据</div>`;
+                }
+            } catch (error) {
+                console.error('加载订单失败:', error);
+            }
+        }
+
+        // 加载收藏数据
+        async function loadFavoritesData() {
+            try {
+                const response = await fetch('/api/favorites');
+                const data = await response.json();
+                const container = document.getElementById('favorites-list');
+                
+                if (data.code === 0 && data.data.length > 0) {
+                    let html = '';
+                    data.data.forEach(item => {
+                        html += `
+                            <div class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-yi-light relative">
+                                <div class="h-40 bg-gray-200 flex items-center justify-center">
+                                    <i class="fa-regular fa-image text-3xl text-gray-400"></i>
+                                </div>
+                                <button onclick="toggleFavorite(${item.product_id}, '${item.name}', ${item.price}, this); loadFavoritesData();" class="absolute top-2 right-2 w-8 h-8 bg-white bg-opacity-90 rounded-full flex items-center justify-center text-yi-red shadow-sm hover:scale-110 transition-transform">
+                                    <i class="fa-solid fa-heart"></i>
+                                </button>
+                                <div class="p-4">
+                                    <h3 class="text-sm font-medium text-yi-dark line-clamp-1 mb-2" title="${item.name}">${item.name}</h3>
+                                    <div class="text-yi-red font-bold">¥${item.price.toFixed(2)}</div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = `<div class="col-span-full text-center py-20 text-yi-gray">暂无收藏商品</div>`;
+                }
+            } catch (error) {
+                console.error('加载收藏失败:', error);
+            }
+        }
+
+        // 显示商品详情
+        function showProductDetail(product) {
+            const price = parseFloat(product.price) || 198.0;
+            
+            document.getElementById('detail-name').textContent = product.name || '彝绣商品';
+            document.getElementById('detail-price').textContent = `¥${price.toFixed(2)}`;
+            document.getElementById('detail-pattern').textContent = product.pattern_name || '传统纹样';
+            document.getElementById('detail-meaning').textContent = product.meaning || '此纹样承载着彝族人民对美好生活的向往，具有深厚的文化底蕴。';
+            document.getElementById('detail-scenario').textContent = product.scenario || '适合作为节庆礼物、家居装饰或个人佩戴。';
+            
+            const imageContainer = document.getElementById('detail-image-container');
+            // 清空并重新构建图片区域
+             let imgHtml = product.image_url 
+                 ? `<img src="${product.image_url}" id="detail-main-img" class="w-full h-full object-cover" onerror="this.outerHTML='<i class=\\'fa-regular fa-image text-6xl text-gray-300\\' id=\\'detail-main-img\\'></i>'"/>`
+                 : `<i class="fa-regular fa-image text-6xl text-gray-300" id="detail-main-img"></i>`;
+                 
+             imageContainer.innerHTML = imgHtml;
+             
+             // 更新按钮事件
+            const cartBtn = document.getElementById('detail-cart-btn');
+            cartBtn.onclick = () => addToCart(product.id, product.name, price);
+            
+            const favBtn = document.getElementById('detail-fav-btn');
+            favBtn.onclick = function() { toggleFavorite(product.id, product.name, price, this); };
+            // 重置收藏按钮状态为未收藏 (实际项目中需从后端获取状态)
+            favBtn.innerHTML = `<i class="fa-regular fa-heart text-lg mb-1"></i><span class="text-[10px]">收藏</span>`;
+            favBtn.classList.remove('text-yi-red');
+            
+            // 切换视图
+            switchView('product-detail');
+        }
+
+        // HTML 转义防 XSS
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag])
+            );
+        }
+
+        // 登录/注册 Tab 切换
+        let currentLoginMode = 'login';
+        function switchLoginTab(mode) {
+            currentLoginMode = mode;
+            const tabLogin = document.getElementById('tab-login');
+            const tabRegister = document.getElementById('tab-register');
+            const registerFields = document.getElementById('register-fields');
+            const submitBtn = document.getElementById('login-submit-btn');
+
+            if (mode === 'login') {
+                tabLogin.classList.replace('text-white/50', 'text-white');
+                tabLogin.classList.add('border-b-2', 'border-white', 'shadow-[0_2px_0_white]');
+                tabRegister.classList.replace('text-white', 'text-white/50');
+                tabRegister.classList.remove('border-b-2', 'border-white', 'shadow-[0_2px_0_white]');
+                
+                registerFields.classList.add('hidden');
+                submitBtn.textContent = '登 录';
+            } else {
+                tabRegister.classList.replace('text-white/50', 'text-white');
+                tabRegister.classList.add('border-b-2', 'border-white', 'shadow-[0_2px_0_white]');
+                tabLogin.classList.replace('text-white', 'text-white/50');
+                tabLogin.classList.remove('border-b-2', 'border-white', 'shadow-[0_2px_0_white]');
+                
+                registerFields.classList.remove('hidden');
+                submitBtn.textContent = '注册并登录';
+            }
+        }
+
+        // 密码可见性切换
+        function togglePasswordVisibility(inputId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(`${inputId}-icon`);
+            
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            }
+        }
+
+        // 处理登录/注册提交
+        function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('login-submit-btn');
+            const originalText = btn.textContent;
+            
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 处理中...';
+            btn.disabled = true;
+
+            // 模拟网络请求
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                // 模拟登录成功
+                alert(`${currentLoginMode === 'login' ? '登录' : '注册'}成功！欢迎来到南华彝绣平台。`);
+                switchView('chat'); // 登录后跳转到首页(推荐助手)
+                
+                // 清空表单
+                e.target.reset();
+            }, 1000);
+        }
+
+        // 表单提交处理
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const query = userInput.value.trim();
+            if (!query) return;
+
+            // 禁用输入和按钮
+            userInput.value = '';
+            userInput.style.height = 'auto';
+            userInput.disabled = true;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+
+            // 显示用户消息
+            addUserMessage(query);
+
+            // 显示加载动画
+            const loading = addLoadingIndicator();
+
+            try {
+                // 调用本地后端接口
+                const response = await fetch('/recommend', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ query: query })
+                });
+
+                const data = await response.json();
+
+                removeLoadingIndicator(loading);
+
+                if (response.ok && data.recommendation) {
+                    addBotMessage(data.recommendation, data.products || []);
+                } else {
+                    addBotMessage(data.error || '服务器返回了未知的错误。', [], true);
+                }
+            } catch (error) {
+                removeLoadingIndicator(loading);
+                addBotMessage('网络请求失败，请确保后端服务已启动。', [], true);
+                console.error('Error:', error);
+            } finally {
+                // 恢复输入和按钮
+                userInput.disabled = false;
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa-solid fa-arrow-up text-sm"></i>';
+                userInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
